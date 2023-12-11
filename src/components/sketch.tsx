@@ -3,6 +3,10 @@ import { Controls, Line } from "../core/models/controls";
 import p5 from "p5";
 import { DrawLineCommand } from "../core/services/draw-line-command";
 import { Command } from "../core/models/command";
+import Rectangle from "../p5/shapes/rectangle";
+import Triangle from "../p5/shapes/line-segment";
+import LineSegment from "../p5/shapes/line-segment";
+import Circle from "../p5/shapes/circle";
 //-----------------
 // const zoom = (event: any, controls: Controls, p: p5): Controls => {
 //   const direction = event.deltaY > 0 ? -1 : 1;
@@ -31,6 +35,7 @@ const Sketch: React.FC<{ commandAction: string; executeCommand: (command: Comman
   useEffect(() => {
     const sketch = (p: p5) => {
       let canvas;
+      const shapes: any[] = [];
 
       p.setup = () => {
         canvas = p.createCanvas(p.windowWidth, p.windowHeight);
@@ -52,13 +57,40 @@ const Sketch: React.FC<{ commandAction: string; executeCommand: (command: Comman
             },
           }));
         });
+        //#region
+
+        const rectToDrag = new Rectangle(p, 50, 50, 200, 200);
+        rectToDrag.dragEnabled = true;
+        rectToDrag.fillColor = p.color(80);
+        shapes.push(rectToDrag);
+
+        const anotherRectToDrag = new Rectangle(p, 200, 200, 200, 200);
+        anotherRectToDrag.dragEnabled = true;
+        anotherRectToDrag.fillColor = p.color(120);
+        shapes.push(anotherRectToDrag);
+
+        const circle = new Circle(p, 100, 300, 50);
+        circle.dragEnabled = true;
+        circle.fillColor = p.color(150);
+        shapes.push(circle);
+
+        const triangleToDrag = new Triangle(p, 300, 50, 400, 50);
+        triangleToDrag.dragEnabled = true;
+        triangleToDrag.fillColor = p.color(180);
+        shapes.push(triangleToDrag);
+
+        const lineSeg = new LineSegment(p, 50, 450, 150, 350);
+        lineSeg.dragEnabled = true;
+        lineSeg.strokeColor = p.color(230);
+        shapes.push(lineSeg);
+        //#endregion
       };
 
       p.draw = () => {
         p.background(225, 255, 255, 0);
         p.translate(controls.view.x, controls.view.y);
         p.scale(controls.view.zoom);
-
+        shapes.forEach((s) => s.draw());
         // Draw all stored elements
         controls.drawnElements.forEach((element) => {
           p.stroke(255, 165, 0);
@@ -76,6 +108,7 @@ const Sketch: React.FC<{ commandAction: string; executeCommand: (command: Comman
       };
 
       p.mousePressed = () => {
+        shapes.filter((s) => s.dragEnabled).find((s) => s.handleMousePressed());
         if (commandAction === "line") {
           // Set the starting point of the line
           const startLine: Line = {
@@ -91,6 +124,7 @@ const Sketch: React.FC<{ commandAction: string; executeCommand: (command: Comman
       };
 
       p.mouseReleased = () => {
+        shapes.filter((s) => s.isDragged).forEach((s) => s.handleMouseReleased());
         if (commandAction === "line" && controls.startLine) {
           // Store the drawn line
           const drawnLine: Line = {
@@ -111,6 +145,9 @@ const Sketch: React.FC<{ commandAction: string; executeCommand: (command: Comman
             startLine: null,
           }));
         }
+      };
+      p.mouseDragged = () => {
+        shapes.filter((s) => s.isDragged).forEach((s) => s.handleMouseDragged());
       };
     };
 
