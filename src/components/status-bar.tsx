@@ -1,11 +1,13 @@
 interface StatusBarProps {
-  drawingAction: string;
+  commandAction: string;
+  selectionLocked?: boolean;
 }
 
-const StatusBar: React.FC<StatusBarProps> = ({ drawingAction }) => {
+const StatusBar: React.FC<StatusBarProps> = ({ commandAction, selectionLocked }) => {
   return (
     <div className="fixed bottom-0 w-full px-4 py-2 text-gray-900 bg-gray-400">
-      {drawingAction ? `Currently drawing: ${drawingAction}` : "Select a drawing tool to begin."}
+      {commandAction ? `Currently drawing: ${commandAction}` : "Select a drawing tool to begin."}
+      {selectionLocked && <span> Selection Locked</span>}
     </div>
   );
 };

@@ -1,32 +1,33 @@
 import React, { useEffect, useState } from "react";
 import { Controls, Line } from "../core/models/controls";
 import p5 from "p5";
+import { DrawLineCommand } from "../core/services/draw-line-command";
+import { Command } from "../core/models/command";
 //-----------------
-const zoom = (event: any, controls: Controls, p: p5): Controls => {
-  const direction = event.deltaY > 0 ? -1 : 1;
-  const factor = 0.05;
-  const zoom = 1 * direction * factor;
+// const zoom = (event: any, controls: Controls, p: p5): Controls => {
+//   const direction = event.deltaY > 0 ? -1 : 1;
+//   const factor = 0.05;
+//   const zoom = 1 * direction * factor;
 
-  const wx = (event.clientX - controls.view.x) / (p.width * controls.view.zoom);
-  const wy = (event.clientY - controls.view.y) / (p.height * controls.view.zoom);
+//   const wx = (event.clientX - controls.view.x) / (p.width * controls.view.zoom);
+//   const wy = (event.clientY - controls.view.y) / (p.height * controls.view.zoom);
 
-  controls.view.x -= wx * p.width * zoom;
-  controls.view.y -= wy * p.height * zoom;
-  controls.view.zoom += zoom;
-  return controls;
-};
+//   controls.view.x -= wx * p.width * zoom;
+//   controls.view.y -= wy * p.height * zoom;
+//   controls.view.zoom += zoom;
+//   return controls;
+// };
 //-----------------
-const Sketch: React.FC<{ drawingAction: string }> = ({ drawingAction }) => {
-  const controls: Controls = {
-    view: { x: 0, y: 0, zoom: 1 },
-    viewPos: { prevX: null, prevY: null, isDragging: false },
-    drawnElements: [], // Array to store drawn elements
-  };
-  const [control, setControl] = useState<Controls>({
+const Sketch: React.FC<{ commandAction: string; executeCommand: (command: Command) => void }> = ({
+  commandAction,
+  executeCommand,
+}) => {
+  const [controls, setControls] = useState<Controls>({
     view: { x: 0, y: 0, zoom: 1 },
     viewPos: { prevX: null, prevY: null, isDragging: false },
     drawnElements: [], // Array to store drawn elements
   });
+
   useEffect(() => {
     const sketch = (p: p5) => {
       let canvas;
@@ -34,8 +35,22 @@ const Sketch: React.FC<{ drawingAction: string }> = ({ drawingAction }) => {
       p.setup = () => {
         canvas = p.createCanvas(p.windowWidth, p.windowHeight);
         canvas.mouseWheel((e: any) => {
-          const ct = zoom(e, control, p);
-          setControl(ct);
+          const direction = e.deltaY > 0 ? -1 : 1;
+          const factor = 0.05;
+          const zoom = 1 * direction * factor;
+
+          const wx = (e.clientX - controls.view.x) / (p.width * controls.view.zoom);
+          const wy = (e.clientY - controls.view.y) / (p.height * controls.view.zoom);
+
+          setControls((prevControls) => ({
+            ...prevControls,
+            view: {
+              ...prevControls.view,
+              x: prevControls.view.x - wx * p.width * zoom,
+              y: prevControls.view.y - wy * p.height * zoom,
+              zoom: prevControls.view.zoom + zoom,
+            },
+          }));
         });
       };
 
@@ -61,18 +76,22 @@ const Sketch: React.FC<{ drawingAction: string }> = ({ drawingAction }) => {
       };
 
       p.mousePressed = () => {
-        if (drawingAction === "line") {
+        if (commandAction === "line") {
           // Set the starting point of the line
-          controls.startLine = {
+          const startLine: Line = {
             startX: (p.mouseX - controls.view.x) / controls.view.zoom,
             startY: (p.mouseY - controls.view.y) / controls.view.zoom,
             type: "line",
           };
+          setControls((prevControls) => ({
+            ...prevControls,
+            startLine,
+          }));
         }
       };
 
       p.mouseReleased = () => {
-        if (drawingAction === "line" && controls.startLine) {
+        if (commandAction === "line" && controls.startLine) {
           // Store the drawn line
           const drawnLine: Line = {
             type: "line",
@@ -82,11 +101,15 @@ const Sketch: React.FC<{ drawingAction: string }> = ({ drawingAction }) => {
             endY: (p.mouseY - controls.view.y) / controls.view.zoom,
           };
 
-          // Add the line to the array of drawn elements
-          controls.drawnElements.push(drawnLine);
+          // Execute the DrawLineCommand
+          const drawLineCommand = new DrawLineCommand(controls, drawnLine);
+          executeCommand(drawLineCommand);
 
           // Reset the starting point
-          controls.startLine = null;
+          setControls((prevControls) => ({
+            ...prevControls,
+            startLine: null,
+          }));
         }
       };
     };
@@ -95,7 +118,7 @@ const Sketch: React.FC<{ drawingAction: string }> = ({ drawingAction }) => {
     return () => {
       sketchP5.remove();
     };
-  }, [drawingAction]);
+  }, [commandAction, controls, executeCommand]);
 
   return <div id="canvas"></div>;
 };
