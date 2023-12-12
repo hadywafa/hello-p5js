@@ -1,5 +1,7 @@
+import { Action } from "../core/types/actions";
+
 interface StatusBarProps {
-  commandAction: string;
+  commandAction?: Action;
   selectionLocked?: boolean;
 }
 

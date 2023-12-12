@@ -1,13 +1,51 @@
 import { FaRegSquare, FaLock, FaTrashAlt } from "react-icons/fa"; // Import the icons you want to use
 import { GiStraightPipe } from "react-icons/gi";
-import { Command } from "../core/models/command";
-const ActionBar: React.FC<{
-  setCommandAction: (action: string) => void;
-  executeCommand: (command: Command) => void;
-}> = ({ setCommandAction }) => {
-  const handleButtonClick = (action: string) => {
-    setCommandAction(action);
+import p5 from "p5";
+import { Action } from "../core/types/actions";
+interface ActionBarProps {
+  p5Canvas?: p5;
+  setCommandAction: (action: Action) => void;
+}
+const ActionBar: React.FC<ActionBarProps> = (props) => {
+  const handleButtonClick = (action: Action) => {
+    props.setCommandAction(action);
     // executeCommand(command);
+    if (props.p5Canvas) {
+      const x = props.p5Canvas.draw;
+      switch (action) {
+        case "line":
+          props.p5Canvas.draw = () => {
+            console.log("line");
+            props.p5Canvas?.stroke(0);
+            if (props.p5Canvas?.mouseIsPressed === true) {
+              props.p5Canvas?.line(
+                props.p5Canvas?.mouseX,
+                props.p5Canvas?.mouseY,
+                props.p5Canvas?.pmouseX,
+                props.p5Canvas?.pmouseY
+              );
+            }
+          };
+          break;
+        case "rectangle":
+          props.p5Canvas.draw = () => {
+            console.log("rectangle");
+            props.p5Canvas?.stroke("red");
+            if (props.p5Canvas?.mouseIsPressed === true) {
+              props.p5Canvas?.line(
+                props.p5Canvas?.mouseX,
+                props.p5Canvas?.mouseY,
+                props.p5Canvas?.pmouseX,
+                props.p5Canvas?.pmouseY
+              );
+            }
+          };
+          break;
+        default:
+          props.p5Canvas.draw = x;
+          break;
+      }
+    }
   };
   return (
     <div className="flex justify-center">
